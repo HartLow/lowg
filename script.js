@@ -9,6 +9,24 @@ let videoElement;
 const playBtn = document.getElementById('playBtn');
 const uiContainer = document.getElementById('ui-container');
 const statusDiv = document.getElementById('status');
+const loadingContainer = document.getElementById('loading-container');
+const loadingText = document.getElementById('loading-text');
+
+// Resource tracking
+const resources = {
+    audio: false,
+    video: false,
+    image: false
+};
+
+function checkResourcesLoaded() {
+    if (resources.audio && resources.video && resources.image) {
+        // All loaded
+        loadingContainer.style.display = 'none';
+        playBtn.style.display = 'flex';
+        statusDiv.innerText = "Ready to play";
+    }
+}
 
 init();
 animate();
@@ -41,6 +59,8 @@ function init() {
         tex.minFilter = THREE.LinearFilter; // Disable mipmaps to save texture memory
         tex.generateMipmaps = false;
         updatePlaneSizes(); 
+        resources.image = true;
+        checkResourcesLoaded();
     });
     // Darken the background by using a grey color
     const bgMaterial = new THREE.MeshBasicMaterial({ 
@@ -62,6 +82,15 @@ function init() {
     videoElement.crossOrigin = 'anonymous';
     // Ensure we update size when metadata loads to fix aspect ratio immediately
     videoElement.addEventListener('loadedmetadata', updatePlaneSizes);
+    
+    // Check when video can play
+    videoElement.addEventListener('canplaythrough', () => {
+        if (!resources.video) {
+            resources.video = true;
+            checkResourcesLoaded();
+        }
+    });
+    videoElement.load(); // Trigger load
     
     const videoTexture = new THREE.VideoTexture(videoElement);
     
@@ -160,32 +189,32 @@ function init() {
     audioLoader = new THREE.AudioLoader();
     analyser = new THREE.AudioAnalyser(sound, 128); // fftSize 128
 
+    // Preload Audio
+    audioLoader.load('nhac.wav', function(buffer) {
+        sound.setBuffer(buffer);
+        sound.setLoop(false); 
+        sound.setVolume(0.5);
+        resources.audio = true;
+        checkResourcesLoaded();
+    }, (xhr) => {
+        // Optional: Update loading text with percentage
+        if (loadingText) {
+            const percent = Math.floor((xhr.loaded / xhr.total) * 100);
+            loadingText.innerText = `Loading Audio... ${percent}%`;
+        }
+    });
+
     // 6. Event Listeners
     window.addEventListener('resize', onWindowResize);
     
     playBtn.addEventListener('click', () => {
         // Hide the button/UI immediately
         uiContainer.style.display = 'none';
-        
-        if (!sound.buffer) {
-            loadAndPlayMusic();
-        } else {
-            startPlayback();
-        }
-    });
-}
-
-function loadAndPlayMusic() {
-    statusDiv.innerText = "Đang tải nhạc...";
-    
-    audioLoader.load('nhac.wav', function(buffer) {
-        sound.setBuffer(buffer);
-        sound.setLoop(false); // Don't loop music automatically to keep sync logic simple
-        sound.setVolume(0.5);
-        
         startPlayback();
     });
 }
+
+// Removed loadAndPlayMusic as we preload now
 
 function startPlayback() {
     // Reset both to start
@@ -302,6 +331,10 @@ function animate() {
     render();
 }
 
+// Global reusable objects to reduce GC
+const _tempColor = new THREE.Color();
+const _dummyObj = new THREE.Object3D(); // If we were using InstancedMesh, but we are using simple meshes for now.
+
 function render() {
     // 1. Animate Bars based on Music
     if (isPlaying && analyser) {
@@ -336,30 +369,37 @@ function render() {
         const pulse = avgFreq / 255; // 0.0 to 1.0
         
         // LED Effect for Song Title (Changing Colors)
-        const songTitle = document.getElementById('song-title');
-        if (songTitle) {
-            // Cycle color for title
-            const titleHue = (count * 0.1) % 1;
-            // Use a static color object or create one efficiently (GC optimization)
-            const r = Math.floor((Math.sin(titleHue * Math.PI * 2) * 0.5 + 0.5) * 255);
-            const g = Math.floor((Math.sin((titleHue + 0.33) * Math.PI * 2) * 0.5 + 0.5) * 255);
-            const b = Math.floor((Math.sin((titleHue + 0.66) * Math.PI * 2) * 0.5 + 0.5) * 255);
-            
-            // Glow intensity based on pulse
-            const glow = 10 + (pulse * 40); 
-            const opacity = 0.5 + (pulse * 0.5);
-            
-            songTitle.style.textShadow = `
-                0 0 ${glow}px rgba(${r}, ${g}, ${b}, ${opacity}), 
-                0 0 ${glow * 2}px rgba(${r}, ${g}, ${b}, ${opacity * 0.5})
-            `;
-            // Subtle scale effect
-            songTitle.style.transform = `translateX(-50%) scale(${1 + pulse * 0.05})`;
-            
-            // Also update subtitle color slightly
-            const subtitle = document.getElementById('subtitle');
-            if(subtitle) {
-                 subtitle.style.color = `rgba(${r}, ${g}, ${b}, 0.8)`;
+        // OPTIMIZATION: Throttle DOM updates to every 3 frames to prevent layout thrashing/lag
+        if (Math.floor(count * 100) % 3 === 0) {
+            const songTitle = document.getElementById('song-title');
+            if (songTitle) {
+                // Cycle color for title
+                const titleHue = (count * 0.1) % 1;
+                
+                // Efficient color calculation without creating new objects
+                // HSL to RGB approximation for performance
+                _tempColor.setHSL(titleHue, 1, 0.5);
+                
+                const r = Math.floor(_tempColor.r * 255);
+                const g = Math.floor(_tempColor.g * 255);
+                const b = Math.floor(_tempColor.b * 255);
+                
+                // Glow intensity based on pulse
+                const glow = 10 + (pulse * 40); 
+                const opacity = 0.5 + (pulse * 0.5);
+                
+                songTitle.style.textShadow = `
+                    0 0 ${glow}px rgba(${r}, ${g}, ${b}, ${opacity}), 
+                    0 0 ${glow * 2}px rgba(${r}, ${g}, ${b}, ${opacity * 0.5})
+                `;
+                // Subtle scale effect
+                songTitle.style.transform = `translateX(-50%) scale(${1 + pulse * 0.05})`;
+                
+                // Also update subtitle color slightly
+                const subtitle = document.getElementById('subtitle');
+                if(subtitle) {
+                     subtitle.style.color = `rgba(${r}, ${g}, ${b}, 0.8)`;
+                }
             }
         }
 

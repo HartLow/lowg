@@ -132,9 +132,9 @@ function init() {
     // 4. Create Visualizer Elements
 
     // A. Music Bars (Chart Style)
-    const barCount = 64;
-    // Smaller bars: 3 width, 0.5 height, 3 depth (was 5, 1, 5)
-    const barGeometry = new THREE.BoxGeometry(3, 0.5, 3); 
+    const barCount = 32; // Reduced from 64 for performance
+    // Wider bars to fill the space: 8 width (was 3)
+    const barGeometry = new THREE.BoxGeometry(8, 0.5, 3); 
     const barMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff });
     
     // Create a group to center the bars
@@ -142,8 +142,8 @@ function init() {
     
     for(let i = 0; i < barCount; i++) {
         const bar = new THREE.Mesh(barGeometry, new THREE.MeshBasicMaterial({ color: 0x00ffff }));
-        // Position bars in a line, closer together (spacing 5 instead of 8)
-        bar.position.x = (i - barCount / 2) * 5; 
+        // Position bars in a line with wider spacing (12 instead of 5)
+        bar.position.x = (i - barCount / 2) * 12; 
         bar.position.y = -320; // Move down even further (was -250) to be "nhỏ ở bên dưới"
         barGroup.add(bar);
         bars.push(bar);
@@ -151,7 +151,7 @@ function init() {
     scene.add(barGroup);
 
     // B. Firefly Particles (Ambient)
-    const fireflyCount = 1000;
+    const fireflyCount = 200; // Reduced from 1000 for performance
     const fireflyGeometry = new THREE.BufferGeometry();
     const fireflyPositions = [];
     const fireflyScales = [];
@@ -268,8 +268,8 @@ function updatePlaneSizes() {
         // Determine if PC or Mobile based on width
         const isPC = window.innerWidth > 768;
         
-        // Smaller on PC (0.5), larger on Mobile (0.85)
-        const scaleFactor = isPC ? 0.5 : 0.85;
+        // Smaller on PC (0.5), larger on Mobile (1.0)
+        const scaleFactor = isPC ? 0.5 : 1.0;
         
         // Default to screen ratio if video not loaded yet
         let finalWidth = viewWidth * scaleFactor;
@@ -283,7 +283,7 @@ function updatePlaneSizes() {
             finalHeight = finalWidth / videoAspect;
 
             // If height is too big, constrain by height
-            const maxHeight = viewHeight * (isPC ? 0.6 : 0.8);
+            const maxHeight = viewHeight * (isPC ? 0.6 : 0.95);
             if (finalHeight > maxHeight) {
                 finalHeight = maxHeight;
                 finalWidth = finalHeight * videoAspect;

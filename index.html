@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Music Visualizer</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Background Image -->
+    <img id="bgImage" src="nen.png" alt="Background">
+
+    <!-- Song Title (Always Visible) -->
+    <div id="song-title">
+        Low G | In Love (ft. JustaTee) | ‘L2K’ The Album
+        <div id="subtitle">Made by Rei</div>
+    </div>
+
+    <!-- UI Controls -->
+    <div id="ui-container">
+        <button id="playBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+                <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+            </svg>
+        </button>
+        <div id="status"></div>
+    </div>
+
+    <!-- Three.js Container -->
+    <div id="canvas-container"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
